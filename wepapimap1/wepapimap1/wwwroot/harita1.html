@@ -1,0 +1,380 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>wepapimap1 Harita Uygulaması</title>
+    <link rel="stylesheet" href="https://openlayers.org/en/v6.13.0/css/ol.css" type="text/css">
+    <style>
+        /* Tam ekran stilini ayarla */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Harita konteynerinin boyutunu ayarla */
+        #map {
+            margin-top: 3%;
+            width: 100%;
+            height: 97%;
+        }
+
+        /* Üst menü stilleri */
+        .top-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1;
+            background-color: #f2f2f2;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Menü simgeleri için ortak stil */
+        .menu-icon {
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 24px; /* simge boyutu */
+        }
+
+        /* MAP yazısı için stil */
+        .map-text {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        /* Delete Point simgesi için stil */
+        .delete-icon {
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        /* Modal stilleri */
+        .modal {
+            display: none; /* Başlangıçta gizli */
+            position: fixed; /* Sabit pozisyon */
+            z-index: 999; /* Diğer içeriklerin önünde */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* Dikey ve yatay kaydırma */
+            background-color: rgba(0,0,0,0.4); /* Arkaplanı hafifçe karart */
+            padding-top: 60px; /* Modal başlığı için boşluk bırak */
+        }
+
+        /* Modal içeriği */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; /* Orta konum */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Modal genişliği */
+        }
+
+        /* Modal kapatma düğmesi */
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+            .close:hover,
+            .close:focus {
+                color: black;
+                text-decoration: none;
+                cursor: pointer;
+            }
+
+        /* İşaretçi stil */
+        .marker {
+            width: 32px;
+            height: 32px;
+            background-image: url('https://static.vecteezy.com/system/resources/thumbnails/000/573/134/small/vector60-6783-01.jpg');
+            background-size: cover;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Üst Menü -->
+    <div class="top-menu">
+        <!-- Sol Taraf -->
+        <div>
+            <span class="map-text">MAP</span>
+        </div>
+        <!-- Sağ Taraf -->
+        <div>
+            <!-- Add Point Butonu -->
+            <span class="menu-icon" onclick="addPoint()">➕</span>
+            <!-- Delete Point Butonu -->
+            <span class="menu-icon delete-icon" onclick="deletePoint()">➖</span>
+            <!-- Güncelleme Butonu -->
+            <span class="menu-icon" onclick="openUpdatePointModal()">🔄</span>
+            <!-- Query Point Butonu -->
+            <span class="menu-icon" onclick="queryPoint()">❓</span>
+        </div>
+    </div>
+
+    <!-- Harita Konteyneri -->
+    <div id="map" class="map"></div>
+
+    <!-- Ekleme Modal -->
+    <div id="addPointModal" class="modal">
+        <!-- Modal içeriği -->
+        <div class="modal-content">
+            <span class="close" onclick="closeAddPointModal()">&times;</span>
+            <h2>Nokta Ekle</h2>
+            <form id="addPointForm">
+                <label for="addName">İsim:</label><br>
+                <input type="text" id="addName" name="name"><br>
+                <label for="addNumber">Numara:</label><br>
+                <input type="number" id="addNumber" name="number"><br><br>
+                <button type="button" onclick="savePoint()">Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Güncelleme Modal -->
+    <div id="updatePointModal" class="modal">
+        <!-- Modal içeriği -->
+        <div class="modal-content">
+            <span class="close" onclick="closeUpdatePointModal()">&times;</span>
+            <h2>Nokta Güncelle</h2>
+            <form id="updatePointForm">
+                <label for="updateName">İsim:</label><br>
+                <input type="text" id="updateName" name="name"><br>
+                <label for="updateNumber">Numara:</label><br>
+                <input type="number" id="updateNumber" name="number" readonly><br><br>
+                <button type="button" onclick="saveUpdatedPoint()">Güncelle</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- OpenLayers Kütüphanesi -->
+    <script src="https://openlayers.org/en/v6.13.0/build/ol.js"></script>
+
+    <!-- JavaScript Kodları -->
+    <script>
+        var map;
+        var markerLayer;
+        var points = [];
+        var pointDetails = [];
+        var isUpdate = false;
+        var currentUpdateNumber = null;
+
+        function initMap() {
+            map = new ol.Map({
+                target: 'map',
+                layers: [
+                    new ol.layer.Tile({
+                        source: new ol.source.OSM()
+                    })
+                ],
+                view: new ol.View({
+                    center: ol.proj.fromLonLat([35.0, 39.0]),
+                    zoom: 6.5
+                })
+            });
+
+            markerLayer = new ol.layer.Vector({
+                source: new ol.source.Vector(),
+                style: new ol.style.Style({
+                    image: new ol.style.Icon({
+                        src: 'https://cdn.icon-icons.com/icons2/2415/PNG/512/map_marker_icon_146449.png',
+                        scale: 0.5 // İşaretçi boyutunu ayarla
+                    })
+                })
+            });
+            map.addLayer(markerLayer);
+
+            loadPointsFromLocalStorage();
+        }
+
+        function loadPointsFromLocalStorage() {
+            var savedPoints = localStorage.getItem('savedPoints');
+            if (savedPoints) {
+                pointDetails = JSON.parse(savedPoints);
+                pointDetails.forEach(function (point) {
+                    addMarker(ol.proj.fromLonLat(point.coordinate));
+                });
+            }
+        }
+
+        function addPoint() {
+            map.once('click', function (event) {
+                var coordinate = event.coordinate;
+                points.push(coordinate);
+                addMarker(coordinate);
+                openAddPointModal();
+            });
+        }
+
+        function addMarker(coordinate) {
+            var marker = new ol.Feature({
+                geometry: new ol.geom.Point(coordinate)
+            });
+            markerLayer.getSource().addFeature(marker);
+        }
+
+        function openAddPointModal() {
+            document.getElementById('addPointModal').style.display = "block";
+            document.getElementById('addPointForm').reset();
+        }
+
+        function closeAddPointModal() {
+            document.getElementById('addPointModal').style.display = "none";
+        }
+
+        function openUpdatePointModal() {
+            var number = prompt("Güncellenecek numarayı girin:");
+            if (number === null) {
+                // Eğer prompt iptal edilirse, işlemi sonlandır
+                return;
+            }
+
+            var existingPoint = pointDetails.find(function (point) {
+                return point.number === number;
+            });
+
+            if (existingPoint) {
+                // Eğer numara mevcutsa, o noktayı güncellemek için modalı aç
+                document.getElementById('updatePointModal').style.display = "block";
+                // Modal içindeki formu doldur
+                document.getElementById('updateName').value = existingPoint.name;
+                document.getElementById('updateNumber').value = existingPoint.number;
+                document.getElementById('updateNumber').setAttribute('readonly', true);
+                isUpdate = true;
+                currentUpdateNumber = number;
+            } else {
+                // Eğer numara bulunamazsa, hata mesajı göster
+                alert('Bu numara sistemde bulunamadı!');
+            }
+        }
+
+        function closeUpdatePointModal() {
+            document.getElementById('updatePointModal').style.display = "none";
+            isUpdate = false;
+            currentUpdateNumber = null;
+        }
+
+        function savePoint() {
+            var name = document.getElementById('addName').value.trim();
+            var number = document.getElementById('addNumber').value.trim();
+
+            if (name === '') {
+                alert('İsim boş olamaz!');
+                return;
+            }
+
+            if (number === '') {
+                alert('Numara boş olamaz!');
+                return;
+            }
+
+            // Numarayı pointDetails dizisinde kontrol edin
+            var hasDuplicateNumber = pointDetails.some(function (point) {
+                return point.number === number;
+            });
+
+            if (hasDuplicateNumber) {
+                // Hata mesajı gösterin ve fonksiyonu sonlandırın
+                alert('Bu numara zaten sistemde kayıtlı!');
+                closeAddPointModal();
+                return;
+            }
+
+            // Eğer numara mevcut değilse, yeni numarayı ekleyin
+            var coordinate = ol.proj.toLonLat(points[points.length - 1]);
+            pointDetails.push({
+                name: name,
+                number: number,
+                coordinate: coordinate
+            });
+
+            // Ekleme işlemi başarılı oldu, devam edin
+            savePointsToLocalStorage();
+            closeAddPointModal();
+        }
+
+        function saveUpdatedPoint() {
+            if (!isUpdate) {
+                return;
+            }
+
+            var name = document.getElementById('updateName').value.trim();
+
+            if (name === '') {
+                alert('İsim boş olamaz!');
+                return;
+            }
+
+            // Güncellenen ismi pointDetails dizisinde güncelleyin
+            pointDetails = pointDetails.map(function (point) {
+                if (point.number === currentUpdateNumber) {
+                    point.name = name;
+                }
+                return point;
+            });
+
+            // Güncelleme işlemi başarılı oldu, devam edin
+            savePointsToLocalStorage();
+            closeUpdatePointModal();
+        }
+
+        function deletePoint() {
+            var numberToDelete = prompt("Silinecek numarayı girin:");
+            if (numberToDelete === null) {
+                // Eğer prompt iptal edilirse, işlemi sonlandır
+                return;
+            }
+
+            var indexToDelete = pointDetails.findIndex(function (point) {
+                return point.number === numberToDelete;
+            });
+
+            if (indexToDelete !== -1) {
+                // Numarayı diziden sil
+                pointDetails.splice(indexToDelete, 1);
+
+                // Haritadan işareti kaldır
+                markerLayer.getSource().clear();
+                points = [];
+                pointDetails.forEach(function (point) {
+                    addMarker(ol.proj.fromLonLat(point.coordinate));
+                    points.push(ol.proj.fromLonLat(point.coordinate));
+                });
+
+                // Değişiklikleri kaydet
+                savePointsToLocalStorage();
+            } else {
+                // Eğer numara bulunamazsa, hata mesajı göster
+                alert('Bu numara sistemde bulunamadı!');
+            }
+        }
+
+        function savePointsToLocalStorage() {
+            localStorage.setItem('savedPoints', JSON.stringify(pointDetails));
+        }
+
+        function queryPoint() {
+            var message = 'Kayıtlı Noktalar:\n';
+            pointDetails.forEach(function (point, index) {
+                message += (index + 1) + '. İsim: ' + point.name + ', Numara: ' + point.number + ', Koordinatlar: ' + point.coordinate + '\n';
+            });
+            alert(message);
+        }
+
+        // Sayfa yüklendiğinde harita yüklensin
+        window.onload = function () {
+            initMap();
+        };
+    </script>
+</body>
+</html>

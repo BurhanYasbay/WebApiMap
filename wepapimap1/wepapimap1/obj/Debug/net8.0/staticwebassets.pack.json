@@ -1,0 +1,25 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\brhnd\\source\\repos\\wepapimap1\\wepapimap1\\wwwroot\\harita.html",
+      "PackagePath": "staticwebassets\\harita.html"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.wepapimap1.props",
+      "PackagePath": "build\\wepapimap1.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.wepapimap1.props",
+      "PackagePath": "buildMultiTargeting\\wepapimap1.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.wepapimap1.props",
+      "PackagePath": "buildTransitive\\wepapimap1.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.wepapimap1.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

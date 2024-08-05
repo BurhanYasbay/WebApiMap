@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "v3tjUjFN9R0UFiLEl+HVzPuOKtIR2Nyr6sLlVM0HXV4=",
+  "Source": "wepapimap1",
+  "BasePath": "_content/wepapimap1",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "wepapimap1\\wwwroot",
+      "Source": "wepapimap1",
+      "ContentRoot": "C:\\Users\\brhnd\\source\\repos\\wepapimap1\\wepapimap1\\wwwroot\\",
+      "BasePath": "_content/wepapimap1",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "C:\\Users\\brhnd\\source\\repos\\wepapimap1\\wepapimap1\\wwwroot\\harita.html",
+      "SourceId": "wepapimap1",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\brhnd\\source\\repos\\wepapimap1\\wepapimap1\\wwwroot\\",
+      "BasePath": "_content/wepapimap1",
+      "RelativePath": "harita.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\harita.html"
+    }
+  ]
+}
